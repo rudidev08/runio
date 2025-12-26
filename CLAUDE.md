@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Working Style
 
-- Ask me instead of assuming when not clear
+- Ask instead of assuming when not clear
 - Bazzite and Aurora repos are available locally for reference:
   - `~/Code/aurora`
   - `~/Code/bazzite`
