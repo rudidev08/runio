@@ -1,5 +1,59 @@
 # vim: set ft=make :
 
+# Start here: base config, apps, KDE defaults, and Framework tools if applicable
+[group('RunIO')]
+setup-runio-all: setup-runio-base setup-runio-apps setup-runio-kde
+    #!/usr/bin/bash
+    set -euo pipefail
+    # Install framework-tool on Framework laptops
+    if [[ -d /sys/class/dmi/id ]] && grep -qi "framework" /sys/class/dmi/id/board_vendor 2>/dev/null; then
+        if command -v brew &>/dev/null; then
+            echo "Framework laptop detected, installing framework-tool..."
+            brew install framework-tool || echo "Note: framework-tool installation failed"
+        fi
+    fi
+    echo ""
+    echo "RunIO setup complete!"
+
+# Configure Flathub, install base flatpaks, and add ublue-os homebrew tap
+[group('RunIO')]
+setup-runio-base:
+    #!/usr/bin/bash
+    set -euo pipefail
+    echo "Running RunIO first-boot setup..."
+    echo ""
+
+    # Ensure Flathub is configured
+    echo "Ensuring Flathub remote is configured..."
+    flatpak remote-add --if-not-exists --system flathub https://flathub.org/repo/flathub.flatpakrepo
+
+    # Install recommended flatpaks
+    echo "Installing recommended Flatpaks..."
+    FLATPAKS=(
+        "io.github.kolunmi.Bazaar"
+    )
+    for app in "${FLATPAKS[@]}"; do
+        if ! flatpak list --system --columns=application | grep -q "^${app}$"; then
+            echo "Installing ${app}..."
+            flatpak install --system -y flathub "${app}" || echo "Note: ${app} may already be installed or unavailable"
+        else
+            echo "${app} is already installed"
+        fi
+    done
+
+    # Add ublue-os homebrew tap
+    echo "Adding ublue-os homebrew tap..."
+    brew tap ublue-os/tap || true
+
+    echo ""
+    echo "RunIO base setup complete!"
+
+# Install all RunIO apps (Gear Lever, Vorta, pCloud, Fastmail, etc.)
+[group('RunIO')]
+setup-runio-apps: install-gearlever install-vorta install-pcloud install-fastmail
+    #!/usr/bin/bash
+    echo "All Run apps installed successfully!"
+
 # Configure KDE Plasma with RunIO defaults:
 # - Icons-only task manager: Brave, Steam, Dolphin, Terminal
 # - Digital clock: 24h format, "MMM d" date format
@@ -85,51 +139,9 @@ setup-runio-kde:
     fi
 
     echo ""
-    echo "KDE Plasma configuration complete!"
-    echo "Please restart Plasma or log out/in for changes to take effect."
-    echo "Quick restart: kquitapp6 plasmashell && kstart plasmashell"
-
-# Run first-boot setup for RunIO (useful after rebasing)
-[group('RunIO')]
-setup-runio:
-    #!/usr/bin/bash
-    set -euo pipefail
-    echo "Running RunIO first-boot setup..."
-    echo ""
-
-    # Ensure Flathub is configured
-    echo "Ensuring Flathub remote is configured..."
-    flatpak remote-add --if-not-exists --system flathub https://flathub.org/repo/flathub.flatpakrepo
-
-    # Install recommended flatpaks
-    echo "Installing recommended Flatpaks..."
-    FLATPAKS=(
-        "io.github.kolunmi.Bazaar"
-    )
-    for app in "${FLATPAKS[@]}"; do
-        if ! flatpak list --system --columns=application | grep -q "^${app}$"; then
-            echo "Installing ${app}..."
-            flatpak install --system -y flathub "${app}" || echo "Note: ${app} may already be installed or unavailable"
-        else
-            echo "${app} is already installed"
-        fi
-    done
-
-    # Add ublue-os homebrew tap
-    echo "Adding ublue-os homebrew tap..."
-    UBLUE_TAP_OK=false
-    if brew tap ublue-os/tap; then
-        UBLUE_TAP_OK=true
-    fi
-
-    echo ""
-    echo "RunIO setup complete!"
-    echo "You may need to log out and back in for all changes to take effect."
-    echo ""
-    echo "Tip: Run 'ujust install-runio-apps' to install recommended applications."
-    if $UBLUE_TAP_OK && [[ -d /sys/class/dmi/id ]] && grep -qi "framework" /sys/class/dmi/id/board_vendor 2>/dev/null; then
-        echo "Tip: Run 'brew install framework-tool' to install the Framework laptop tool."
-    fi
+    echo "KDE Plasma configuration complete! Restarting Plasma..."
+    kquitapp6 plasmashell && kstart plasmashell &
+    echo "Plasma restarted successfully."
 
 # Install an AppImage file from a local file or URL (internal helper)
 [private]
@@ -235,9 +247,3 @@ install-fastmail:
     else
         echo "Note: Flatpak desktop file not found, skipping app launcher configuration."
     fi
-
-# Install all RunIO apps (Gear Lever, Vorta, pCloud, Fastmail, etc.)
-[group('RunIO')]
-install-runio-apps: install-gearlever install-vorta install-pcloud install-fastmail
-    #!/usr/bin/bash
-    echo "All Run apps installed successfully!"
