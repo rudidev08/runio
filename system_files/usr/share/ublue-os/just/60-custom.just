@@ -54,9 +54,7 @@ setup-runio-apps: install-gearlever install-vorta install-pcloud install-fastmai
     #!/usr/bin/bash
     echo "All Run apps installed successfully!"
 
-# Configure KDE Plasma with RunIO defaults:
-# - Icons-only task manager: Brave, Steam, Dolphin, Terminal
-# - Digital clock: 24h format, "MMM d" date format
+# KDE defaults: 24h clock with custom date format
 [group('RunIO')]
 setup-runio-kde:
     #!/usr/bin/bash
@@ -69,35 +67,6 @@ setup-runio-kde:
         echo "Error: Plasma config not found at $PLASMA_CONFIG"
         echo "Please log into KDE Plasma first and try again."
         exit 1
-    fi
-
-    # === Configure icons-only task manager ===
-    echo ""
-    echo "Configuring icons-only task manager..."
-
-    # Define the launchers we want: Brave, Steam, Dolphin, Terminal
-    LAUNCHERS="applications:com.brave.Browser.desktop,applications:steam.desktop,preferred://filemanager,applications:org.gnome.Ptyxis.desktop"
-
-    # Find the icontasks applet section and update launchers
-    ICONTASKS_ID=$(grep -B5 "plugin=org.kde.plasma.icontasks" "$PLASMA_CONFIG" | grep -oP '\[Containments\]\[\d+\]\[Applets\]\[\d+\]' | head -1)
-
-    if [[ -z "$ICONTASKS_ID" ]]; then
-        echo "Warning: Could not find icons-only task manager applet."
-        echo "Make sure you have the icons-only task manager widget on your panel."
-    else
-        # Extract the group path for kwriteconfig6
-        CONTAINMENT_NUM=$(echo "$ICONTASKS_ID" | grep -oP 'Containments\]\[\K\d+')
-        APPLET_NUM=$(echo "$ICONTASKS_ID" | grep -oP 'Applets\]\[\K\d+')
-
-        echo "Found icontasks applet: Containment $CONTAINMENT_NUM, Applet $APPLET_NUM"
-
-        kwriteconfig6 --file "$PLASMA_CONFIG" \
-            --group "Containments" --group "$CONTAINMENT_NUM" \
-            --group "Applets" --group "$APPLET_NUM" \
-            --group "Configuration" --group "General" \
-            --key "launchers" "$LAUNCHERS"
-
-        echo "Task manager configured with: Brave, Steam, Dolphin, Terminal"
     fi
 
     # === Configure digital clock ===
